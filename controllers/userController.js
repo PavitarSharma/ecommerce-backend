@@ -14,14 +14,14 @@ export const signUp = async (req, res, next) => {
             return res.status(404).json(error.details[0].message);
         }
 
-        const { username, email, mobile, password, avatar } = req.body;
+        const { username, email, mobile, password } = req.body;
 
         let user = await User.findOne({ email });
         if (user) {
             return res.status(404).json("User already exit!");
         }
-
-        const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+        const file = req.files.avatar
+        const myCloud = await cloudinary.v2.uploader.upload(file.tempFilePath, {
             folder: "avatars",
             width: 150,
             crop: "scale"
@@ -49,7 +49,7 @@ export const signUp = async (req, res, next) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: error
         })
     }
 }
@@ -296,11 +296,12 @@ export const updateProfile = async (req, res, next) => {
 
             await cloudinary.v2.uploader.destroy(imageId);
 
-            const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+            const file = req.files.avatar
+            const myCloud = await cloudinary.v2.uploader.upload(file.tempFilePath, {
                 folder: "avatars",
                 width: 150,
-                crop: "scale",
-            });
+                crop: "scale"
+            })
             newUserData.avatar = {
                 public_id: myCloud.public_id,
                 url: myCloud.secure_url,
@@ -312,6 +313,8 @@ export const updateProfile = async (req, res, next) => {
             runValidator: true,
             useFindAndModify: false,
         });
+
+
 
         return res.status(200).json({
             success: true,
