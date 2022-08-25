@@ -17,8 +17,8 @@ export const createProduct = async (req, res, next) => {
         const imagesLinks = [];
 
         for (let i = 0; i < images.length; i++) {
-            const file = req.files.images[i]
-            const result = await cloudinary.v2.uploader.upload(file.tempFilePath, {
+            
+            const result = await cloudinary.v2.uploader.upload(images[i], {
                 folder: "products",
             });
 
@@ -126,8 +126,8 @@ export const updateProduct = async (req, res, next) => {
             const imagesLinks = [];
 
             for (let i = 0; i < images.length; i++) {
-                const file = req.files.images[i]
-                const result = await cloudinary.v2.uploader.upload(file.tempFilePath, {
+              
+                const result = await cloudinary.v2.uploader.upload(images[i], {
                     folder: "products",
                 });
                 

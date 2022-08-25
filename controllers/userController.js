@@ -14,14 +14,14 @@ export const signUp = async (req, res, next) => {
             return res.status(404).json(error.details[0].message);
         }
 
-        const { username, email, mobile, password } = req.body;
+        const { username, email, mobile, password, avatar } = req.body;
 
         let user = await User.findOne({ email });
         if (user) {
             return res.status(404).json("User already exit!");
         }
-        const file = req.files.avatar
-        const myCloud = await cloudinary.v2.uploader.upload(file.tempFilePath, {
+        
+        const myCloud = await cloudinary.v2.uploader.upload(avatar, {
             folder: "avatars",
             width: 150,
             crop: "scale"
@@ -296,8 +296,8 @@ export const updateProfile = async (req, res, next) => {
 
             await cloudinary.v2.uploader.destroy(imageId);
 
-            const file = req.files.avatar
-            const myCloud = await cloudinary.v2.uploader.upload(file.tempFilePath, {
+        
+            const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
                 folder: "avatars",
                 width: 150,
                 crop: "scale"
