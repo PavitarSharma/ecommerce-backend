@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import sendToken from "../utils/jwtToken.js";
 import crypto from "crypto-js";
 import sendMail from "../utils/sendMail.js";
+import cloudinary from "cloudinary";
 import { signUpValidation, signInValidation } from "../utils/validation.js";
 
 
@@ -13,17 +14,26 @@ export const signUp = async (req, res, next) => {
             return res.status(404).json(error.details[0].message);
         }
 
-        let user = await User.findOne({ email: req.body.email });
+        const { username, email, mobile, password, avatar } = req.body;
+
+        let user = await User.findOne({ email });
         if (user) {
             return res.status(404).json("User already exit!");
         }
 
+        const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+            folder: "avatars",
+            width: 150,
+            crop: "scale"
+        })
+
+
         user = await new User({
-            username: req.body.username,
-            email: req.body.email,
-            mobile: req.body.mobile,
-            password: req.body.password,
-            avatar: { public_id: "test.png", url: "test.png" },
+            username,
+            email,
+            mobile,
+            password,
+            avatar: { public_id: myCloud.public_id, url: myCloud.secure_url },
         });
 
         await user.save()
@@ -278,6 +288,25 @@ export const updateProfile = async (req, res, next) => {
             email: req.body.email,
         };
 
+
+        if (req.body.avatar !== "") {
+            const user = await User.findById(req.user.id);
+
+            const imageId = user.avatar.public_id;
+
+            await cloudinary.v2.uploader.destroy(imageId);
+
+            const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+                folder: "avatars",
+                width: 150,
+                crop: "scale",
+            });
+            newUserData.avatar = {
+                public_id: myCloud.public_id,
+                url: myCloud.secure_url,
+            };
+        }
+
         const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
             new: true,
             runValidator: true,
@@ -348,7 +377,7 @@ export const updateUserRole = async (req, res, next) => {
             role: req.body.role,
         };
 
-        const user = await User.findByIdAndUpdate(req.params.id,newUserData, {
+        const user = await User.findByIdAndUpdate(req.params.id, newUserData, {
             new: true,
             runValidators: true,
             useFindAndModify: false,
@@ -370,6 +399,10 @@ export const updateUserRole = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
+
+        const imageId = user.avatar.public_id;
+
+        await cloudinary.v2.uploader.destroy(imageId);
 
         if (!user) {
             return res.status(404).json("User is not find with this id")
